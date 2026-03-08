@@ -1,5 +1,7 @@
 import { User } from "../models/user.js";
 import bcrypt from "bcryptjs";
+import { generateToken } from "../token/generatetoken.js";
+import jwt from "jsonwebtoken"
 
 
 
@@ -32,14 +34,65 @@ export const registerUser = async(req , res)=>{
 
 
     // token la generate gareyna
+    const token = generateToken(savedUser)
 
     res.status(201).json({
         status:"success",
-        data: savedUser
+        data: savedUser,
+        token
     })
     } catch (error) {
         console.log(error);
         
         
+    }
+};
+
+
+export const login = async(req,res)=>{
+    const {email, password} = req.body;
+
+    try {
+        // checking if the user exsist by email
+
+        const user = await User.findOne({email})
+
+        if(!user) return res.status(400).json({message: "user not found"});
+
+
+        // password comparing and checking
+
+        const ispasswordCorrect = await bcrypt.compare(password, user.password);
+
+        if(!ispasswordCorrect) return res.status(400).json({message: "password is incorrrect"});
+
+
+       // Generate token 
+
+        // const token = generateToken(user)
+
+        // console.log(token);
+
+
+        // const token = jwt.sign(
+        //     {id:user.id},
+        //     process.env.JWT_SECRET,
+        //     {expiresIn:process.env.JWT_EXPIREIN}
+        // )
+        //  console.log(token);
+        
+
+        res.status(200).json({
+            status:"success",
+            data:{
+                id:user.id,
+                name:user.name,
+                email:user.email,
+                role:user.role
+            },
+            token:generateToken(user)
+        })
+    } catch (error) {
+        res.status(500).json({message:"server error",error})
     }
 }
